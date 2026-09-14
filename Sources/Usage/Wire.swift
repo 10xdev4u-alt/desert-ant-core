@@ -16,7 +16,7 @@ import JavaScriptKit
 
 /// SDK identity attached to every body's `sdk` field.
 public let defaultSDKName = "desert-ant-core"
-public let defaultSDKVersion = "0.1.0" // keep in sync with the package/product version
+public let defaultSDKVersion = "3.1.0" // keep in sync with the package/product version (check:version enforces it)
 
 /// The platform tag put on the wire's `platform` field, derived from the build
 /// target. `IngestBody` defaults to this, so callers never pass it by hand.

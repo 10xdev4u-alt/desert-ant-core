@@ -45,6 +45,17 @@ for model in $(dal_models); do
     ' "$dir" "$version"
 done
 
+# The telemetry wire versions: literals that cannot read a package file at
+# runtime, so the release rewrites them like everything else.
+sed -i.bak -E 's|(defaultSDKVersion = ")[0-9]+\.[0-9]+\.[0-9]+|\1'"$version"'|' \
+    "Sources/Usage/Wire.swift" && rm -f "Sources/Usage/Wire.swift.bak"
+sed -i.bak -E 's|(const SDK_VERSION = ")[0-9]+\.[0-9]+\.[0-9]+|\1'"$version"'|' \
+    "packages/tongue-node/src/index.ts" && rm -f "packages/tongue-node/src/index.ts.bak"
+sed -i.bak -E 's|(SDK_VERSION: String = ")[0-9]+\.[0-9]+\.[0-9]+|\1'"$version"'|' \
+    "packages/tongue-kotlin/src/main/kotlin/ai/desertant/tongue/usage/UsageTurnstile.kt" && rm -f "packages/tongue-kotlin/src/main/kotlin/ai/desertant/tongue/usage/UsageTurnstile.kt.bak"
+sed -i.bak -E 's|("version": ")[0-9]+\.[0-9]+\.[0-9]+|\1'"$version"'|' \
+    "packages/tongue-node/USAGE.md" && rm -f "packages/tongue-node/USAGE.md.bak"
+
 # The install snippets in the README (SwiftPM `from:` and every ai.desertant
 # Maven coordinate, models included).
 sed -i.bak -E \
