@@ -27,6 +27,17 @@ for model in $(dal_models); do
     [ -z "$pin" ] || check "${pin#^}" "$dir @desert-ant-labs/core dependency"
 done
 
+# The telemetry wire versions cannot read a package file at runtime, so they
+# are literals — and literals drift unless something checks them.
+check "$(sed -n -E 's|.*defaultSDKVersion = "([^"]*)".*|\1|p' "Sources/Usage/Wire.swift")" \
+    "Sources/Usage/Wire.swift defaultSDKVersion"
+check "$(sed -n -E 's|.*const SDK_VERSION = "([^"]*)".*|\1|p' "packages/tongue-node/src/index.ts")" \
+    "packages/tongue-node/src/index.ts SDK_VERSION"
+check "$(sed -n -E 's|.*SDK_VERSION: String = "([^"]*)".*|\1|p' "packages/tongue-kotlin/src/main/kotlin/ai/desertant/tongue/usage/UsageTurnstile.kt")" \
+    "tongue-kotlin UsageTurnstile SDK_VERSION"
+check "$(sed -n -E 's|.*"version": "([0-9]+\.[0-9]+\.[0-9]+)".*|\1|p' packages/tongue-node/USAGE.md | head -1)" \
+    "packages/tongue-node/USAGE.md example"
+
 # The Gradle artifacts are not checked here because they cannot drift: every
 # Gradle project reads VERSION at configuration time (build.gradle.kts), so no
 # build script carries a version literal to get out of step.

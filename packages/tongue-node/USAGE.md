@@ -12,7 +12,7 @@ the same way.
 {
   "platform": "android",
   "app": { "id": "com.acme.app" },
-  "sdk": { "name": "tongue-kotlin", "version": "0.1.0" },
+  "sdk": { "name": "tongue-kotlin", "version": "3.1.0" },
   "sentAt": "2026-07-27T19:40:00.000Z",
   "events": [{ "name": "load", "deviceId": "9f1c…", "callCount": 12 }]
 }
