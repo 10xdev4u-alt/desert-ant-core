@@ -114,10 +114,16 @@ export class Weights {
     // The shift is a float32 subtraction in Swift and Kotlin (`Float - Float`,
     // widened only for `exp`), so it has to be one here too — without the fround
     // this line alone moved the answer by ~1e-10.
-    const exponentiated = logits.map(
-      ([label, value]) => [label, Math.exp(Math.fround(value - maximum))] as const,
-    );
-    const total = exponentiated.reduce((sum, [, value]) => sum + value, 0);
+    // Fused tail: one pass computes exp values + total, then sort/slice/map.
+    // Op order per element is unchanged, so float results are bitwise identical.
+    let total = 0;
+    const exponentiated: Array<readonly [string, number]> = new Array(logits.length);
+    for (let i = 0; i < logits.length; i++) {
+      const [label, value] = logits[i]!;
+      const e = Math.exp(Math.fround(value - maximum));
+      exponentiated[i] = [label, e] as const;
+      total += e;
+    }
     return exponentiated
       .sort((a, b) => b[1] - a[1])
       .slice(0, topK)
