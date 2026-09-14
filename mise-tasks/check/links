@@ -9,7 +9,8 @@ source "$MISE_PROJECT_ROOT/Tools/dal.sh"
 # here becomes a dead URL everywhere.
 
 node --input-type=module <<'NODE'
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const models = JSON.parse(readFileSync("manifest.json", "utf8")).models;
 
@@ -45,5 +46,70 @@ if (dead.length) {
   console.error(`error: ${dead.length} of ${targets.length} manifest URLs do not resolve`);
   process.exit(1);
 }
-console.log(`${targets.length} URLs resolve`);
+console.log(`${targets.length} manifest URLs resolve`);
+
+// Markdown body links: README tables, model pages, package and example READMEs
+// are the other half of the public URL surface, and nothing checked them.
+const SKIP_HOSTS = [
+  "www.npmjs.com", // bot-walled: 403s every non-browser client
+  "platform.desertant.ai", // POST-only ingest API: a GET probe proves nothing (the transport tests drive the real path)
+];
+// A bare `.../resolve/<tag>` is a download prefix, not a link: the Hub 404s
+// it without a file path by design (see README's offline section, where the
+// file names join it). Only full file URLs are checkable.
+const HF_PREFIX = /\/resolve\/v?\d+\.\d+\.\d+\/?$/;
+const mdFiles = [];
+{
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      if (entry === "node_modules" || entry === ".git") continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (entry.endsWith(".md")) mdFiles.push(full);
+    }
+  };
+  walk(".");
+}
+const seen = new Set(targets.map(([, , url]) => url));
+const mdTargets = [];
+for (const file of mdFiles) {
+  const text = readFileSync(file, "utf8");
+  for (const match of text.matchAll(/https?:\/\/[^\s)"'>]+/g)) {
+    let url = match[0].replace(/[`*.,;:!?]+$/, "");
+    let host = "";
+    try {
+      host = new URL(url).host;
+    } catch {
+      continue;
+    }
+    if (SKIP_HOSTS.includes(host) || HF_PREFIX.test(url) || seen.has(url)) continue;
+    seen.add(url);
+    mdTargets.push([file, url]);
+  }
+}
+
+const mdResults = await Promise.all(
+  mdTargets.map(async ([file, url]) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(15000) });
+        // Gated repos answer 401 to anonymous requests, which is correct
+        // rather than broken (same rule as the manifest phase above).
+        if (res.ok || res.status === 401) return null;
+        if (attempt === 2) return `  ${file}: ${res.status} ${url}`;
+      } catch (error) {
+        if (attempt === 2) return `  ${file}: ${error.message} ${url}`;
+      }
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  })
+);
+
+const mdDead = mdResults.filter(Boolean);
+if (mdDead.length) {
+  console.error(mdDead.join("\n"));
+  console.error(`error: ${mdDead.length} of ${mdTargets.length} markdown URLs do not resolve`);
+  process.exit(1);
+}
+console.log(`${mdTargets.length} markdown URLs resolve`);
 NODE
