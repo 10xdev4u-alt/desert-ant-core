@@ -208,6 +208,10 @@ jobs:
     needs: [gate, natives]
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: read # publish needs nothing written back; provenance mints its own token
+      id-token: write # Sigstore provenance for every tarball
+      actions: read # download-artifact for the staged natives
     steps:
       - uses: actions/checkout@v5
       - uses: jdx/mise-action@v4
