@@ -35,7 +35,7 @@ publish_package() { # <directory>
     fi
     # The tarball must carry the license (package.json: SEE LICENSE IN ...).
     cp LICENSE.md "$dir/LICENSE.md"
-    ( cd "$dir" && npm publish "${npm_args[@]}" )
+    ( cd "$dir" && npm publish "${npm_args[@]}" --provenance )
     echo "published: $name@$version"
 }
 
