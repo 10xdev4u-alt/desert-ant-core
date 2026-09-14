@@ -177,6 +177,15 @@ frequent words of a language appear in everyone's training data, so any
 detector's single-word accuracy partly measures memorized vocabulary. Read the
 word-pair and sentence numbers as the generalization signal.
 
+**6. Romanized text is not the language's script.** Tamil in Tamil script
+(`"வணக்கம் எப்படி இருக்கீங்க"`) detects as `ta`, confident, through script
+routing. The same words in Latin letters (`"vanakkam"`) read as Estonian,
+tentative — the model sees Latin n-grams, not Tamil. This holds for every
+non-Latin language written phonetically in Latin script: the answer reflects
+the script on the page, not the language in the speaker's head. Mitigation:
+detect the native script where the product allows it, and treat low-reliability
+output on romanized input as "unknown", not as an answer.
+
 ## Measured quality
 
 Every number below is measured on the shipped int8 weights, on three
