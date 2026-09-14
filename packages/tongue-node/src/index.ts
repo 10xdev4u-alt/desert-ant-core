@@ -61,12 +61,15 @@ export interface LoadOptions {
 export class Tongue {
   /** One turnstile per instance. See usage.ts and docs/USAGE.md. */
   private readonly usage: UsageTurnstile | null;
+  /** Full-label membership, built once: the common latin path allocated a 59-entry Set per detect. */
+  private readonly fullLabels: ReadonlySet<string>;
 
   private constructor(
     private readonly metadata: Metadata,
     private readonly weights: Weights,
   ) {
     this.usage = UsageTurnstile.create(SDK_VERSION);
+    this.fullLabels = new Set(metadata.latin_labels ?? metadata.labels);
   }
 
   /** Load from explicit bytes — the platform-free path. */
@@ -125,18 +128,20 @@ export class Tongue {
       return finish([{ language: routed.candidates[0], probability: 1 }], "confident");
     }
 
-    const allowed =
+    // Narrowing: membership test against the small candidate list, no intermediate array.
+    const allowed: ReadonlySet<string> =
       routed.verdict === "narrowing"
-        ? this.metadata.labels.filter((label) => routed.candidates.includes(label))
-        : (this.metadata.latin_labels ?? this.metadata.labels);
-    if (allowed.length === 0) return finish([], "empty");
+        ? new Set(routed.candidates.filter((c) => this.metadata.labels.includes(c)))
+        : this.fullLabels;
+    if (allowed.size === 0) return finish([], "empty");
 
-    const ranked = this.weights.rank(normalized, new Set(allowed), topK);
+    const ranked = this.weights.rank(normalized, allowed, topK);
     return finish(ranked, this.reliability(normalized, ranked));
   }
 
   private reliability(text: string, ranked: readonly Prediction[]): Reliability {
-    const characters = [...text].length;
+    let characters = 0;
+    for (const _ of text) characters++;
     const margin =
       ranked.length > 1
         ? ranked[0]!.probability - ranked[1]!.probability
