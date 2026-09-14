@@ -25,6 +25,9 @@ the same way.
 - **`callCount`** is how many detections happened, summed server-side.
 - **No text is ever sent.** Nothing that was detected, no language results, no
   input length. The pipeline never touches the network; only the turnstile does.
+- **One boundary to know:** events may also carry a `context` map, but it is
+  host-supplied, never SDK-supplied — the SDK puts no user content there. If
+  you attach context, its contents are your responsibility, not the SDK's.
 
 ### How often
 
