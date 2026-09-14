@@ -57,7 +57,7 @@ rather than as an answer, and ask for more text where the product allows it.
 
 | | |
 |---|---|
-| `Tongue.load(options?)` | load the model; `options.from` is a directory or base URL |
+| `Tongue.load(options?)` | load the model; `options.from` is a directory or base URL, `options.cache` sizes the repeat-answer cache (default 256, `false` disables) |
 | `Tongue.fromBytes(metadata, bytes)` | load from bytes you already have |
 | `detect(text, topK?)` | `Detection` |
 | `Detection.language` | top candidate, or `null` on empty input |
